@@ -8,9 +8,12 @@ import java.awt.*;
 public class RegisterPage extends JFrame {
 
     public RegisterPage() {
+        // Safety net database initialization
+        DatabaseConnection.initializeDatabase();
+
         // Basic Frame Setup
         setTitle("Medicare - Create Account");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(800, 700);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -47,39 +50,67 @@ public class RegisterPage extends JFrame {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Row 1: Full Name
-        addFormField(formPanel, "Full Name:", new JTextField(20), gbc, 0);
-
-        // Row 2: Age and Gender
-        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        row2.setOpaque(false);
+        // Declare fields to capture form inputs
+        JTextField nameField = new JTextField(20);
+        nameField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        
         JSpinner ageSpinner = new JSpinner(new SpinnerNumberModel(18, 0, 120, 1));
-        row2.add(ageSpinner);
-        row2.add(new JLabel("   Gender: "));
+        ageSpinner.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        
         JRadioButton male = new JRadioButton("Male");
         JRadioButton female = new JRadioButton("Female");
-        male.setOpaque(false); female.setOpaque(false);
+        male.setSelected(true);
+        male.setOpaque(false);
+        female.setOpaque(false);
         ButtonGroup genderGroup = new ButtonGroup();
-        genderGroup.add(male); genderGroup.add(female);
-        row2.add(male); row2.add(female);
+        genderGroup.add(male);
+        genderGroup.add(female);
+        
+        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        row2.setOpaque(false);
+        row2.add(ageSpinner);
+        row2.add(new JLabel("   Gender: "));
+        row2.add(male);
+        row2.add(female);
+
+        String[] bloodGroups = {"Select", "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"};
+        JComboBox<String> bloodCombo = new JComboBox<>(bloodGroups);
+        bloodCombo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        JTextField heightField = new JTextField();
+        heightField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        
+        JTextField weightField = new JTextField();
+        weightField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        JPanel row4 = new JPanel(new GridLayout(1, 2, 20, 0));
+        row4.setOpaque(false);
+        row4.add(createInputWithLabel("Height (cm):", heightField));
+        row4.add(createInputWithLabel("Weight (kg):", weightField));
+
+        JTextField emailField = new JTextField(20);
+        emailField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        JPasswordField passField = new JPasswordField(20);
+        passField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        // Row 1: Full Name
+        addFormField(formPanel, "Full Name:", nameField, gbc, 0);
+
+        // Row 2: Age and Gender
         addFormField(formPanel, "Age:", row2, gbc, 1);
 
         // Row 3: Blood Group
-        String[] bloodGroups = {"Select", "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"};
-        addFormField(formPanel, "Blood Group:", new JComboBox<>(bloodGroups), gbc, 2);
+        addFormField(formPanel, "Blood Group:", bloodCombo, gbc, 2);
 
-        // Row 4: Height and Weight
-        JPanel row4 = new JPanel(new GridLayout(1, 2, 20, 0));
-        row4.setOpaque(false);
-        row4.add(createInputWithLabel("Height (cm):", new JTextField()));
-        row4.add(createInputWithLabel("Weight (kg):", new JTextField()));
+        // Row 4: Physical Stats
         addFormField(formPanel, "Physical Stats:", row4, gbc, 3);
 
         // Row 5: Email
-        addFormField(formPanel, "Email ID:", new JTextField(20), gbc, 4);
+        addFormField(formPanel, "Email ID:", emailField, gbc, 4);
 
         // Row 6: Password
-        addFormField(formPanel, "Password:", new JPasswordField(20), gbc, 5);
+        addFormField(formPanel, "Password:", passField, gbc, 5);
 
         mainPanel.add(formPanel, BorderLayout.CENTER);
 
@@ -89,9 +120,33 @@ public class RegisterPage extends JFrame {
 
         JButton registerBtn = createStyledButton("Complete Registration", new Color(40, 167, 69));
         registerBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Account Created Successfully! Please login.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            new LoginPage().setVisible(true);
-            this.dispose();
+            String name = nameField.getText().trim();
+            int age = (Integer) ageSpinner.getValue();
+            String gender = male.isSelected() ? "Male" : "Female";
+            String blood = (String) bloodCombo.getSelectedItem();
+            String height = heightField.getText().trim();
+            String weight = weightField.getText().trim();
+            String email = emailField.getText().trim();
+            String password = new String(passField.getPassword()).trim();
+
+            if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill in all required fields (Name, Email, Password)!", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Save to SQL Database via StockManager
+            if (StockManager.getUserByEmail(email) != null) {
+                JOptionPane.showMessageDialog(this, "Email is already registered!", "Error", JOptionPane.ERROR_MESSAGE);
+            } else {
+                StockManager.User newUser = new StockManager.User(name, age, gender, blood, height, weight, email, password);
+                if (StockManager.registerUser(newUser)) {
+                    JOptionPane.showMessageDialog(this, "Account Created Successfully! Please login.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    new LoginPage().setVisible(true);
+                    this.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to register account! Please check details and database connection.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
         });
         footerPanel.add(registerBtn);
 

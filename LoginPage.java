@@ -8,9 +8,12 @@ import java.awt.*;
 public class LoginPage extends JFrame {
 
     public LoginPage() {
+        // Safety net database initialization
+        DatabaseConnection.initializeDatabase();
+
         // Basic Frame Setup
         setTitle("Medicare - Login");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(800, 600);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -78,13 +81,28 @@ public class LoginPage extends JFrame {
 
         JButton loginBtn = createStyledButton("Login", new Color(0, 123, 255));
         loginBtn.addActionListener(e -> {
-            String email = emailField.getText();
-            String name = email.split("@")[0]; // Just a simple way to get a name for demo
-            if (name.isEmpty()) name = "User";
+            String email = emailField.getText().trim();
+            String password = new String(passField.getPassword()).trim();
             
-            JOptionPane.showMessageDialog(this, "Login Successful! Welcome, " + name, "MediCare", JOptionPane.INFORMATION_MESSAGE);
-            new DashboardPage(name).setVisible(true);
-            this.dispose();
+            if (email.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter email and password!", "MediCare", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            // SQL-backed authentication via StockManager
+            StockManager.User user = StockManager.getUserByEmail(email);
+            if (user != null && user.password != null && user.password.equals(password)) {
+                JOptionPane.showMessageDialog(this, "Login Successful! Welcome, " + user.fullname, "MediCare", JOptionPane.INFORMATION_MESSAGE);
+                
+                DashboardPage dashboard = new DashboardPage(user.fullname);
+                dashboard.setUserEmail(email);
+                dashboard.loadUserRemindersFromDB();
+                dashboard.setVisible(true);
+                
+                this.dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid Email or Password!", "Login Failed", JOptionPane.ERROR_MESSAGE);
+            }
         });
         footer.add(loginBtn);
 

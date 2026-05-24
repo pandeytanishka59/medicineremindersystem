@@ -154,8 +154,7 @@ public class WelcomePage extends JFrame {
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(bg.darker(), 1),
-                BorderFactory.createEmptyBorder(12, 25, 12, 25)
-        ));
+                BorderFactory.createEmptyBorder(12, 25, 12, 25)));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         // Hover Effect
@@ -163,6 +162,7 @@ public class WelcomePage extends JFrame {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 btn.setBackground(bg.darker());
             }
+
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 btn.setBackground(bg);
             }
@@ -200,7 +200,7 @@ public class WelcomePage extends JFrame {
                 // Adding 12 hours offset to simulate 16 May as requested
                 long twelveHoursInMs = 12 * 60 * 60 * 1000;
                 Date simulatedDate = new Date(System.currentTimeMillis() + twelveHoursInMs);
-                
+
                 timeLabel.setText(timeFormat.format(simulatedDate));
                 dateLabel.setText(dateFormat.format(simulatedDate));
             }
@@ -226,6 +226,9 @@ public class WelcomePage extends JFrame {
     }
 
     public static void main(String[] args) {
+        // Explicitly initialize database tables first
+        DatabaseConnection.initializeDatabase();
+
         // Set Look and Feel to System Default for better appearance
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
